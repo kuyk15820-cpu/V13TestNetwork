@@ -389,8 +389,10 @@
 - (void)downloadAndShareUpdate {
     if (!self.latestVersionDownloadUrl) return;
     
-    // ตั้งค่าข้อความการดาวน์โหลดให้ผู้ใช้ทราบบน HUD
     self.hud.label.text = [NSString stringWithUTF8String:AY_OBFUSCATE("กำลังดาวน์โหลดไฟล์...")];
+    
+    self.hud.label.textColor = [UIColor lightGrayColor];
+    
     self.hud.progress = 0.0f;
     self.hud.mode = MBProgressHUDModeDeterminate;
     [self.hud showAnimated:YES];
@@ -474,7 +476,17 @@
             [self.hud hideAnimated:YES];
             self.hud.mode = MBProgressHUDModeIndeterminate;
             self.hud.label.text = nil;
-            [self showStatusAlert:[NSString stringWithUTF8String:AY_OBFUSCATE("คำสั่งทำงานล้มเหลว")]];
+            
+            // เพิ่มการแจ้งเตือนแบบแยกสถานะ FT เฉพาะสำหรับการดาวน์โหลดไม่สำเร็จ/เน็ตหลุด
+            UIImage *errorIcon = nil;
+            if (@available(iOS 13.0, *)) {
+                errorIcon = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("xmark.circle")]];
+                errorIcon = [errorIcon imageWithTintColor:[UIColor whiteColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+            }
+            [FTNotificationIndicator setNotificationIndicatorStyle:UIBlurEffectStyleDark];
+            [FTNotificationIndicator showNotificationWithImage:errorIcon
+                                                          title:[NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดไม่สำเร็จ")]
+                                                        message:[NSString stringWithUTF8String:AY_OBFUSCATE("ไม่สามารถดาวน์โหลดไฟล์ได้ในขณะนี้ กรุณาลองใหม่อีกครั้งในภายหลัง")]];
         });
     }
 }
