@@ -175,8 +175,8 @@
     return nil;
 }
 
-// ผสมสีข้อความในระบบ Header Text ดั้งเดิมโดยใช้ NSAttributedString
-- (NSAttributedString *)tableView:(UITableView *)tableView __id_nullability attributedTitleForHeaderInSection:(NSInteger)section {
+// ผสมสีข้อความในระบบ Header Text ดั้งเดิมโดยใช้ NSAttributedString (ลบส่วนเกินที่ทำให้เกิด Error แล้ว)
+- (NSAttributedString *)tableView:(UITableView *)tableView attributedTitleForHeaderInSection:(NSInteger)section {
     if (section == 1 && self.isUpdateAvailable) {
         NSString *part1 = [NSString stringWithUTF8String:AY_OBFUSCATE("✨ มีอัปเดตใหม่ ")];
         NSString *part2 = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะที่นี่เพื่อดาวน์โหลดเวอร์ชันใหม่")];
