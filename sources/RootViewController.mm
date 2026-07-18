@@ -178,17 +178,12 @@
         static NSString *updateCellIdentifier = @"UpdateCell";
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:updateCellIdentifier];
         if (!cell) {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:updateCellIdentifier];
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:updateCellIdentifier];
             cell.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
             cell.textLabel.textColor = [UIColor whiteColor];
-            cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
         }
         cell.textLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเวอร์ชันใหม่")];
-        cell.detailTextLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะเพื่อดาวน์โหลดไฟล์ไปเก็บไว้ที่โฟลเดอร์ชั่วคราวและติดตั้งด้วยตัวเอง")];
-        if (@available(iOS 13.0, *)) {
-            cell.imageView.image = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.circle")]];
-            cell.imageView.tintColor = [UIColor whiteColor];
-        }
+        cell.imageView.image = nil; // นำไอคอน SF ออก
         return cell;
     }
 
@@ -207,7 +202,7 @@
     
     NSDictionary *item = self.menuItems[indexPath.row];
     cell.textLabel.text = item[[NSString stringWithUTF8String:AY_OBFUSCATE("title")]];
-    cell.detailTextLabel.text = item[[NSString stringWithUTF8String:AY_OBFUSCATE("subtitle")]];
+    cell.detailTextLabel.text = item[[安排StringWithUTF8String:AY_OBFUSCATE("subtitle")] ? : item[@"subtitle"]];
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     
     // ใส่ไอคอน SF Symbols เข้าไปที่ด้านซ้ายของ Cell
