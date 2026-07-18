@@ -9,6 +9,7 @@
     RootViewController *_rootViewController;
     UIViewController *_mainContainer; 
     MBProgressHUD *_networkHUD;
+    BOOL _splashFinished;
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
@@ -67,7 +68,12 @@
                 [self->_mainContainer.view addSubview:navController.view];
                 [navController didMoveToParentViewController:self->_mainContainer];
                 
-            } completion:nil];
+            } completion:^{
+
+                self->_splashFinished = YES;
+                
+                [self checkCurrentNetworkStatus];
+            }];
             
         }];
     });
@@ -75,28 +81,35 @@
     return YES;
 }
 
-- (void)networkStatusChanged:(NSNotification *)notification {
-
-    RRReachability *reachability = (RRReachability *)notification.object;
-    RRReachabilityStatus status = [reachability currentStatus];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (status == RRReachabilityStatusNotReachable) {
-            if (!self->_networkHUD) {
-                self->_networkHUD = [MBProgressHUD showHUDAddedTo:self.window animated:YES];
-                self->_networkHUD.mode = MBProgressHUDModeIndeterminate;
-                
-                self->_networkHUD.backgroundView.style = MBProgressHUDBackgroundStyleSolidColor;
-                self->_networkHUD.backgroundView.color = [UIColor colorWithWhite:0.0f alpha:0.6f];
-                self->_networkHUD.bezelView.blurEffectStyle = UIBlurEffectStyleDark;
-                self->_networkHUD.contentColor = [UIColor whiteColor];                
-                self->_networkHUD.label.text = [NSString stringWithUTF8String:AY_OBFUSCATE("กำลังรอเครือข่าย...")];
-            }
-        } else {
-            if (self->_networkHUD) {
-                [self->_networkHUD hideAnimated:YES];
-                self->_networkHUD = nil;
-            }
+- (void)checkCurrentNetworkStatus {
+    RRReachabilityStatus status = [[RRReachability sharedInstance] currentStatus];
+    
+    if (status == RRReachabilityStatusNotReachable) {
+        if (!self->_networkHUD) {
+            self->_networkHUD = [MBProgressHUD showHUDAddedTo:self.window animated:YES];
+            self->_networkHUD.mode = MBProgressHUDModeIndeterminate;
+            
+            self->_networkHUD.backgroundView.style = MBProgressHUDBackgroundStyleSolidColor;
+            self->_networkHUD.backgroundView.color = [UIColor colorWithWhite:0.0f alpha:0.6f];
+            self->_networkHUD.bezelView.blurEffectStyle = UIBlurEffectStyleDark;
+            self->_networkHUD.contentColor = [UIColor lightGrayColor];                
+            self->_networkHUD.label.text = [NSString stringWithUTF8String:AY_OBFUSCATE("กำลังรอเครือข่าย...")];
         }
+    } else {
+        if (self->_networkHUD) {
+            [self->_networkHUD hideAnimated:YES];
+            self->_networkHUD = nil;
+        }
+    }
+}
+
+- (void)networkStatusChanged:(NSNotification *)notification {
+    if (!_splashFinished) {
+        return;
+    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self checkCurrentNetworkStatus];
     });
 }
 
