@@ -15,7 +15,7 @@
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(networkStatusChanged:)
-                                                 name:kRealReachabilityChangedNotification
+                                                 name:kRRReachabilityChangedNotification
                                                object:nil];
     
     [[RRReachability sharedInstance] startNotifier];
