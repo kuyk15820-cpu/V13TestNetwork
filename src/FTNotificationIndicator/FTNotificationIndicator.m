@@ -387,7 +387,7 @@
 
 #pragma mark - main methods
 
-- (void)showWithImage:(UIImage *)image title:(NSString *)title message:(NSString *)message style:(UIBlurEffectStyle)style
+/*- (void)showWithImage:(UIImage *)image title:(NSString *)title message:(NSString *)message style:(UIBlurEffectStyle)style
 {
     self.effect = [UIBlurEffect effectWithStyle:style];
 
@@ -409,6 +409,57 @@
 
     self.titleLabel.frame = CGRectMake(text_X, kFTNotificationStatusBarHeight, kFTScreenWidth - kFTNotificationMargin_X - text_X,  kFTNotificationTitleHeight);
     self.messageLabel.frame = CGRectMake(text_X, kFTNotificationStatusBarHeight+kFTNotificationTitleHeight, kFTScreenWidth - kFTNotificationMargin_X - text_X, messageSize.height);
+}*/
+
+- (void)showWithImage:(UIImage *)image title:(NSString *)title message:(NSString *)message style:(UIBlurEffectStyle)style
+{
+    self.effect = [UIBlurEffect effectWithStyle:style];
+
+    if (image) {
+        self.iconImageView.image = image;
+    }
+    self.iconImageView.hidden = !(image);
+    self.titleLabel.text = title;
+    self.messageLabel.text = message;
+    self.titleLabel.textColor = [self getTextColorWithStyle:style];
+    self.messageLabel.textColor = [self getTextColorWithStyle:style];
+
+    CGSize messageSize = [self getFrameForNotificationMessageLabelWithImage:self.iconImageView.image message:message];
+    
+    CGFloat text_X = image ? kFTNotificationMargin_X*2 + kFTNotificationImageSize : kFTNotificationMargin_X;
+    
+    CGFloat bannerHeight = [self getFrameForNotificationViewWithImage:image message:message].height;
+
+    if (message == nil || message.length == 0) {
+        CGFloat availableHeight = bannerHeight - kFTNotificationStatusBarHeight;
+        
+        _iconImageView.frame = CGRectMake(kFTNotificationMargin_X, 
+                                          kFTNotificationStatusBarHeight + (availableHeight - kFTNotificationImageSize) / 2.0f, 
+                                          kFTNotificationImageSize, 
+                                          kFTNotificationImageSize);
+
+        self.titleLabel.frame = CGRectMake(text_X, 
+                                           kFTNotificationStatusBarHeight + (availableHeight - kFTNotificationTitleHeight) / 2.0f, 
+                                           kFTScreenWidth - kFTNotificationMargin_X - text_X,  
+                                           kFTNotificationTitleHeight);
+        
+        self.messageLabel.frame = CGRectZero;
+    } else {
+        _iconImageView.frame = CGRectMake(kFTNotificationMargin_X, 
+                                          kFTNotificationStatusBarHeight + kFTNotificationMargin_Y, 
+                                          kFTNotificationImageSize, 
+                                          kFTNotificationImageSize);
+
+        self.titleLabel.frame = CGRectMake(text_X, 
+                                           kFTNotificationStatusBarHeight, 
+                                           kFTScreenWidth - kFTNotificationMargin_X - text_X,  
+                                           kFTNotificationTitleHeight);
+        
+        self.messageLabel.frame = CGRectMake(text_X, 
+                                             kFTNotificationStatusBarHeight + kFTNotificationTitleHeight, 
+                                             kFTScreenWidth - kFTNotificationMargin_X - text_X, 
+                                             messageSize.height);
+    }
 }
 
 #pragma mark - getFrameForNotificationMessageLabelWithImage
