@@ -91,8 +91,9 @@
             self->_networkHUD.backgroundView.style = MBProgressHUDBackgroundStyleSolidColor;
             self->_networkHUD.backgroundView.color = [UIColor colorWithWhite:0.0f alpha:0.6f];
             self->_networkHUD.bezelView.blurEffectStyle = UIBlurEffectStyleDark;
-            self->_networkHUD.contentColor = [UIColor lightGrayColor];                
-            self->_networkHUD.label.text = [NSString stringWithUTF8String:AY_OBFUSCATE("กำลังรอเครือข่าย...")];
+            self->_networkHUD.contentColor = [UIColor whiteColor]; 
+            self->_networkHUD.label.text = [NSString stringWithUTF8String:AY_OBFUSCATE("กำลังรอเครือข่าย...")];            
+            self->_networkHUD.label.textColor = [UIColor lightGrayColor]; 
         }
     } else {
         if (self->_networkHUD) {
