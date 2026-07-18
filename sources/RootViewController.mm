@@ -160,7 +160,7 @@
         cell.textLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเวอร์ชันใหม่")];
         cell.detailTextLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะเพื่อดาวน์โหลดไฟล์ไปเก็บไว้ที่โฟลเดอร์ชั่วคราวและติดตั้งด้วยตัวเอง")];
         if (@available(iOS 13.0, *)) {
-            cell.imageView.image = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.circle.fill")]];
+            cell.imageView.image = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.circle")]];
             cell.imageView.tintColor = [UIColor whiteColor];
         }
         return cell;
@@ -377,8 +377,8 @@
                     }
                     [FTNotificationIndicator setNotificationIndicatorStyle:UIBlurEffectStyleDark];
                     [FTNotificationIndicator showNotificationWithImage:updateIcon
-                                                                  title:[NSString stringWithUTF8String:AY_OBFUSCATE("อัปเดตระบบ")]
-                                                                message:[NSString stringWithFormat:[NSString stringWithUTF8String:AY_OBFUSCATE("พบเวอร์ชันใหม่ %@ พร้อมให้ดาวน์โหลดแล้ว")], latestTag]];
+                                                                  title:[NSString stringWithUTF8String:AY_OBFUSCATE("มีอัปเดตใหม่")]
+                                                                message:[NSString stringWithFormat:[NSString stringWithUTF8String:AY_OBFUSCATE("เวอร์ชันใหม่ %@ พร้อมให้ดาวน์โหลดแล้ว")], latestTag]];
                 });
             }
         }
@@ -390,7 +390,7 @@
     if (!self.latestVersionDownloadUrl) return;
     
     // ตั้งค่าข้อความการดาวน์โหลดให้ผู้ใช้ทราบบน HUD
-    self.hud.label.text = [NSString stringWithUTF8String:AY_OBFUSCATE("กำลังดาวน์โหลดไฟล์อัปเดต...")];
+    self.hud.label.text = [NSString stringWithUTF8String:AY_OBFUSCATE("กำลังดาวน์โหลดไฟล์...")];
     self.hud.progress = 0.0f;
     self.hud.mode = MBProgressHUDModeDeterminate;
     [self.hud showAnimated:YES];
@@ -443,7 +443,7 @@
             // แสดงสถานะผ่าน FTNotification Indicator ว่าโหลดเสร็จสิ้น
             UIImage *successIcon = nil;
             if (@available(iOS 13.0, *)) {
-                successIcon = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.doc.fill")]];
+                successIcon = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.doc")]];
                 successIcon = [successIcon imageWithTintColor:[UIColor whiteColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
             }
             [FTNotificationIndicator setNotificationIndicatorStyle:UIBlurEffectStyleDark];
