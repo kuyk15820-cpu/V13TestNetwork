@@ -479,7 +479,8 @@
             [FTNotificationIndicator setNotificationIndicatorStyle:UIBlurEffectStyleDark];
             [FTNotificationIndicator showNotificationWithImage:successIcon
                                                           title:[NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเสร็จสิ้น")]
-                                                        message:[NSString stringWithUTF8String:AY_OBFUSCATE("กรุณาบันทึกไฟล์ .ipa เพื่อติดตั้งเวอร์ชันล่าสุด")]
+
+message:[NSString stringWithUTF8String:AY_OBFUSCATE("กรุณาบันทึกไฟล์ .ipa เพื่อติดตั้งเวอร์ชันล่าสุด")]];
             
             // เรียกแชร์เปิดไฟล์ผ่านระบบ Share Sheet ทันที เพื่อให้ผู้ใช้เลือก Save to Files หรือติดตั้งเอง
             NSArray *itemsToShare = @[destinationURL];
