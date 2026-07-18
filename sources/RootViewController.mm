@@ -202,7 +202,7 @@
     
     NSDictionary *item = self.menuItems[indexPath.row];
     cell.textLabel.text = item[[NSString stringWithUTF8String:AY_OBFUSCATE("title")]];
-    cell.detailTextLabel.text = item[[安排StringWithUTF8String:AY_OBFUSCATE("subtitle")] ? : item[@"subtitle"]];
+    cell.detailTextLabel.text = item[[NSString StringWithUTF8String:AY_OBFUSCATE("subtitle")] ? : item[@"subtitle"]];
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     
     // ใส่ไอคอน SF Symbols เข้าไปที่ด้านซ้ายของ Cell
