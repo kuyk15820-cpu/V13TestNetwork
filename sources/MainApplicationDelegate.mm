@@ -9,10 +9,10 @@
     RootViewController *_rootViewController;
     UIViewController *_mainContainer; 
     MBProgressHUD *_networkHUD;
-    BOOL _splashFinished;
+    BOOL _splashFinished; 
 }
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {    
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(networkStatusChanged:)
@@ -68,8 +68,7 @@
                 [self->_mainContainer.view addSubview:navController.view];
                 [navController didMoveToParentViewController:self->_mainContainer];
                 
-            } completion:^{
-
+            } completion:^(BOOL finished) {                 
                 self->_splashFinished = YES;
                 
                 [self checkCurrentNetworkStatus];
