@@ -123,11 +123,6 @@
     self.tableView.separatorColor = [UIColor separatorColor];
     self.tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     
-    // เพิ่มตัวตรวจจับการแตะ (Gesture) บน TableView เพื่อเช็คการกดที่ตัว Header Text ของระบบ
-    UITapGestureRecognizer *headerTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleHeaderTapGesture:)];
-    headerTapGesture.cancelsTouchesInView = NO; 
-    [self.tableView addGestureRecognizer:headerTapGesture];
-    
     [self.view addSubview:self.tableView];
 }
 
@@ -154,68 +149,49 @@
 #pragma mark - UITableView Quick Setup (Dark Style)
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    // ถ้ามีอัปเดต จะแสดงเซกชันถัดจากเซกชันหลัก เพื่อทำเป็นปุ่ม Header ของระบบ
-    if (self.isUpdateAvailable) {
-        return 2;
-    }
+    // ถ้าระบบพบการอัปเดตใหม่ จะทำการขยายเป็น 2 เซกชัน เพื่อแสดงเมนูอัปเดตด้านล่างต่อจาก TableView เดิม
     return 1;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) {
-        return self.menuItems.count;
+    if (self.isUpdateAvailable) {
+        return 1; // ถูกแทนที่ด้วยตารางเมนูอัปเดตอย่างเดียวทันที
     }
-    return 0; // เซกชันที่ 1 ไม่มีตารางหรือแถวใดๆ เพราะใช้เฉพาะ Header Text เท่านั้น
+    return self.menuItems.count;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     if (section == 0) {
+        if (self.isUpdateAvailable) {
+            return [NSString stringWithUTF8String:AY_OBFUSCATE("พบเวอร์ชันใหม่พร้อมใช้งาน")];
+        }
         return [NSString stringWithUTF8String:AY_OBFUSCATE("เครื่องมือจัดการวิดีโอ")];
     }
-    return nil;
-}
-
-// ผสมสีข้อความในระบบ Header Text ดั้งเดิมโดยใช้ NSAttributedString (ลบส่วนเกินที่ทำให้เกิด Error แล้ว)
-- (NSAttributedString *)tableView:(UITableView *)tableView attributedTitleForHeaderInSection:(NSInteger)section {
-    if (section == 1 && self.isUpdateAvailable) {
-        NSString *part1 = [NSString stringWithUTF8String:AY_OBFUSCATE("✨ มีอัปเดตใหม่ ")];
-        NSString *part2 = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะที่นี่เพื่อดาวน์โหลดเวอร์ชันใหม่")];
-        NSString *fullText = [NSString stringWithFormat:@"%@%@", part1, part2];
-        
-        NSMutableAttributedString *attributedStr = [[NSMutableAttributedString alloc] initWithString:fullText];
-        
-        // ตั้งค่าฟอนต์มาตรฐานของระบบ Header
-        UIFont *headerFont = [UIFont systemFontOfSize:13.0f weight:UIFontWeightRegular];
-        [attributedStr addAttribute:NSFontAttributeName value:headerFont range:NSMakeRange(0, fullText.length)];
-        
-        // ช่วงข้อความที่ 1 ให้ใช้สีข้อความปกติของ Header ระบบ (สีเทา)
-        NSRange range1 = [fullText rangeOfString:part1];
-        [attributedStr addAttribute:NSForegroundColorAttributeName value:[UIColor secondaryLabelColor] range:range1];
-        
-        // ช่วงข้อความที่ 2 (คำสั่งกดดาวน์โหลด) ให้เป็นสีน้ำเงินเด่นชัด
-        NSRange range2 = [fullText rangeOfString:part2];
-        [attributedStr addAttribute:NSForegroundColorAttributeName value:[UIColor systemBlueColor] range:range2];
-        [attributedStr addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:13.0f weight:UIFontWeightMedium] range:range2];
-        
-        return attributedStr;
+    if (section == 1) {
+        return [NSString stringWithUTF8String:AY_OBFUSCATE("มีอัปเดตใหม่")];
     }
     return nil;
-}
-
-// ตรวจจับพิกัดเมื่อผู้ใช้แตะโดนตัว Header ของระบบในเซกชันอัปเดต
-- (void)handleHeaderTapGesture:(UITapGestureRecognizer *)gesture {
-    if (!self.isUpdateAvailable) return;
-    
-    CGPoint tapPoint = [gesture locationInView:self.tableView];
-    CGRect headerRect = [self.tableView rectForHeaderInSection:1];
-    
-    // ตรวจสอบว่าพิกัดที่แตะอยู่ในพื้นที่ Header Text ของ Section 1 หรือไม่
-    if (CGRectContainsPoint(headerRect, tapPoint)) {
-        [self downloadAndShareUpdate];
-    }
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.isUpdateAvailable) {
+        static NSString *updateCellIdentifier = @"UpdateCell";
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:updateCellIdentifier];
+        if (!cell) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:updateCellIdentifier];
+            cell.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+            cell.textLabel.textColor = [UIColor whiteColor];
+            cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
+        }
+        cell.textLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเวอร์ชันใหม่")];
+        cell.detailTextLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะเพื่อดาวน์โหลดไฟล์ไปเก็บไว้ที่โฟลเดอร์ชั่วคราวและติดตั้งด้วยตัวเอง")];
+        if (@available(iOS 13.0, *)) {
+            cell.imageView.image = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.circle")]];
+            cell.imageView.tintColor = [UIColor whiteColor];
+        }
+        return cell;
+    }
+
     static NSString *cellIdentifier = @"DarkCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     
@@ -240,26 +216,18 @@
         cell.imageView.tintColor = [UIColor whiteColor];
     }
     
-    if (indexPath.row == 0 && self.isUpdateAvailable) {
-        cell.textLabel.textColor = [UIColor grayColor];
-        cell.detailTextLabel.textColor = [UIColor grayColor];
-        cell.accessoryType = UITableViewCellAccessoryNone;
-    } else {
-        cell.textLabel.textColor = [UIColor labelColor];
-        cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
-        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-    }
-    
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    if (indexPath.section == 0 && indexPath.row == 0) {
-        if (self.isUpdateAvailable) {
-            return;
-        }
+    if (self.isUpdateAvailable) {
+        [self downloadAndShareUpdate];
+        return;
+    }
+
+    if (indexPath.row == 0) {
         [self openSystemPicker];
     }
 }
@@ -518,7 +486,7 @@
             // ป้องกันแอปพลิเคชันเกิดความเสียหายเมื่อเปิดในอุปกรณ์กลุ่ม iPad
             if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
                 activityVC.popoverPresentationController.sourceView = self.tableView;
-                activityVC.popoverPresentationController.sourceRect = [self.tableView rectForSection:1];
+                activityVC.popoverPresentationController.sourceRect = [self.tableView rectForSection:0];
             }
             
             [self presentViewController:activityVC animated:YES completion:nil];
