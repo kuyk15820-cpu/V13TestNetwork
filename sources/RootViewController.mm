@@ -36,7 +36,7 @@
 }
 
 - (void)viewDidLoad {
-    [super viewDidLoad];
+   [super viewDidLoad];
     
     // ตั้งค่าพื้นหลังรวมเป็นสีดำสนิทสนมกับ Dark Mode 
     self.view.backgroundColor = [UIColor systemBackgroundColor];
@@ -149,46 +149,69 @@
 #pragma mark - UITableView Quick Setup (Dark Style)
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    // ถ้าระบบพบการอัปเดตใหม่ จะทำการขยายเป็น 2 เซกชัน เพื่อแสดงเมนูอัปเดตด้านล่างต่อจาก TableView เดิม
+    // ถ้ามีอัปเดต จะแสดงเซกชันเพิ่มอีก 1 เซกชันเพื่อทำเป็นปุ่ม Header Text
+    if (self.isUpdateAvailable) {
+        return 2;
+    }
     return 1;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (self.isUpdateAvailable) {
-        return self.menuItems.count + 1;
+    if (section == 0) {
+        return self.menuItems.count;
     }
-    return self.menuItems.count;
+    return 0; // เซกชันที่ 1 ไม่มี Cell เพราะแสดงเฉพาะปุ่มดาวน์โหลดที่ Header Text เท่านั้น
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     if (section == 0) {
         return [NSString stringWithUTF8String:AY_OBFUSCATE("เครื่องมือจัดการวิดีโอ")];
     }
-    if (section == 1) {
-        return [NSString stringWithUTF8String:AY_OBFUSCATE("มีอัปเดตใหม่")];
+    return nil;
+}
+
+// เพิ่มเติมส่วน Header View สำหรับแสดง Header Text ที่สามารถกดดาวน์โหลดอัปเดตได้
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    if (section == 1 && self.isUpdateAvailable) {
+        UIButton *headerButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        NSString *titleText = [NSString stringWithUTF8String:AY_OBFUSCATE("✨ มีอัปเดตใหม่! แตะที่นี่เพื่อดาวน์โหลดเวอร์ชันใหม่")];
+        
+        if (@available(iOS 15.0, *)) {
+            // ใช้ UIButtonConfiguration เพื่อหลีกเลี่ยง contentEdgeInsets ที่ Deprecated
+            UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
+            config.contentInsets = NSDirectionalEdgeInsetsMake(10, 16, 10, 16);
+            
+            NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:titleText];
+            [attributedString addAttributes:@{
+                NSFontAttributeName: [UIFont boldSystemFontOfSize:14.0f],
+                NSForegroundColorAttributeName: [UIColor systemBlueColor]
+            } range:NSMakeRange(0, titleText.length)];
+            
+            config.attributedTitle = attributedString;
+            headerButton.configuration = config;
+        } else {
+            // รองรับ iOS เวอร์ชันเก่าแบบ Backward Compatibility
+            headerButton.contentEdgeInsets = UIEdgeInsetsMake(10, 16, 10, 16);
+            [headerButton setTitle:titleText forState:UIControlStateNormal];
+            [headerButton setTitleColor:[UIColor systemBlueColor] forState:UIControlStateNormal];
+            headerButton.titleLabel.font = [UIFont boldSystemFontOfSize:14.0f];
+        }
+        
+        headerButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        [headerButton addTarget:self action:@selector(downloadAndShareUpdate) forControlEvents:UIControlEventTouchUpInside];
+        return headerButton;
     }
     return nil;
 }
 
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (self.isUpdateAvailable && indexPath.row == self.menuItems.count) {
-        static NSString *updateCellIdentifier = @"UpdateCell";
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:updateCellIdentifier];
-        if (!cell) {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:updateCellIdentifier];
-            cell.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
-            cell.textLabel.textColor = [UIColor whiteColor];
-            cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
-        }
-        cell.textLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเวอร์ชันใหม่")];
-        cell.detailTextLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะเพื่อดาวน์โหลดไฟล์ .ipa")];
-        if (@available(iOS 13.0, *)) {
-            cell.imageView.image = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.circle")]];
-            cell.imageView.tintColor = [UIColor whiteColor];
-        }
-        return cell;
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    if (section == 1 && self.isUpdateAvailable) {
+        return 40.0f;
     }
+    return UITableViewAutomaticDimension;
+}
 
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     static NSString *cellIdentifier = @"DarkCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     
@@ -229,12 +252,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    if (self.isUpdateAvailable && indexPath.row == self.menuItems.count) {
-        [self downloadAndShareUpdate];
-        return;
-    }
-
-    if (indexPath.row == 0) {
+    if (indexPath.section == 0 && indexPath.row == 0) {
         if (self.isUpdateAvailable) {
             return;
         }
