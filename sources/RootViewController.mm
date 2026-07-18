@@ -6,6 +6,7 @@
 #import "obfuscate.h"
 #import "MBProgressHUD.h"
 #import "FTNotificationIndicator.h"
+#import "RRReachability.h"
 
 @interface RootViewController () <UITableViewDelegate, UITableViewDataSource, PHPickerViewControllerDelegate>
 
@@ -66,8 +67,30 @@
     // --- สั่งอุ่นเครื่อง (Warm-up) หน้า SettingsView รอไว้เงียบ ๆ ทันทีเมื่อเข้าหน้านี้ ---
     // ลบการทำงานระบบเก่าที่อ้างอิงคลาสฝั่ง Swift ออกตามคำสั่งเรียกใช้ SettingsViewController
 
+    // ตั้งค่าและเริ่มระบบตรวจจับการเปลี่ยนแปลงของอินเทอร์เน็ต
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleNetworkChanged:)
+                                                 name:kRRReachabilityChangedNotification
+                                               object:nil];
+    [[RRReachability sharedInstance] startNotifier];
+
     // เริ่มระบบตรวจสอบเวอร์ชันใหม่จาก GitHub
     [self checkAppUpdate];
+}
+
+- (void)dealloc {
+    // ปิดระบบแจ้งเตือนและตัวตรวจจับอินเทอร์เน็ตเพื่อความปลอดภัยของหน่วยความจำ
+    [[RRReachability sharedInstance] stopNotifier];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)handleNetworkChanged:(NSNotification *)notification {
+    RRReachabilityStatus status = [RRReachability sharedInstance].currentStatus;
+    if (status == RRReachabilityStatusReachable && !self.isUpdateAvailable) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self checkAppUpdate];
+        });
+    }
 }
 
 // Action เมื่อผู้ใช้แตะปุ่ม Info ขวาบน
@@ -127,12 +150,12 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     // ถ้าระบบพบการอัปเดตใหม่ จะทำการขยายเป็น 2 เซกชัน เพื่อแสดงเมนูอัปเดตด้านล่างต่อจาก TableView เดิม
-    return self.isUpdateAvailable ? 2 : 1;
+    return 1;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 1) {
-        return 1; // บรรทัดสำหรับแสดงสถานะการกดดาวน์โหลด
+    if (self.isUpdateAvailable) {
+        return self.menuItems.count + 1;
     }
     return self.menuItems.count;
 }
@@ -148,7 +171,7 @@
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (indexPath.section == 1) {
+    if (self.isUpdateAvailable && indexPath.row == self.menuItems.count) {
         static NSString *updateCellIdentifier = @"UpdateCell";
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:updateCellIdentifier];
         if (!cell) {
@@ -158,7 +181,7 @@
             cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
         }
         cell.textLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเวอร์ชันใหม่")];
-        cell.detailTextLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะเพื่อดาวน์โหลดไฟล์ไปเก็บไว้ที่โฟลเดอร์ชั่วคราวและติดตั้งด้วยตัวเอง")];
+        cell.detailTextLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะเพื่อดาวน์โหลดไฟล์ .ipa")];
         if (@available(iOS 13.0, *)) {
             cell.imageView.image = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.circle")]];
             cell.imageView.tintColor = [UIColor whiteColor];
@@ -180,8 +203,8 @@
     }
     
     NSDictionary *item = self.menuItems[indexPath.row];
-    cell.textLabel.text = item[@"title"];
-    cell.detailTextLabel.text = item[@"subtitle"];
+    cell.textLabel.text = item[[NSString stringWithUTF8String:AY_OBFUSCATE("title")]];
+    cell.detailTextLabel.text = item[[NSString stringWithUTF8String:AY_OBFUSCATE("subtitle")]];
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     
     // ใส่ไอคอน SF Symbols เข้าไปที่ด้านซ้ายของ Cell
@@ -190,18 +213,31 @@
         cell.imageView.tintColor = [UIColor whiteColor];
     }
     
+    if (indexPath.row == 0 && self.isUpdateAvailable) {
+        cell.textLabel.textColor = [UIColor grayColor];
+        cell.detailTextLabel.textColor = [UIColor grayColor];
+        cell.accessoryType = UITableViewCellAccessoryNone;
+    } else {
+        cell.textLabel.textColor = [UIColor labelColor];
+        cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    }
+    
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    if (indexPath.section == 1) {
+    if (self.isUpdateAvailable && indexPath.row == self.menuItems.count) {
         [self downloadAndShareUpdate];
         return;
     }
 
     if (indexPath.row == 0) {
+        if (self.isUpdateAvailable) {
+            return;
+        }
         [self openSystemPicker];
     }
 }
@@ -336,15 +372,15 @@
 
 - (void)checkAppUpdate {
     // ดึงเวอร์ชันปัจจุบันของแอปพลิเคชันจาก Info.plist
-    NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-    if (!currentVersion) currentVersion = @"1.0.0";
+    NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:[NSString stringWithUTF8String:AY_OBFUSCATE("CFBundleShortVersionString")]];
+    if (!currentVersion) currentVersion = [NSString stringWithUTF8String:AY_OBFUSCATE("1.0.0")];
 
     // URL สำหรับเรียกเช็ค Releases ล่าสุดผ่านทาง GitHub API (กรุณาแทนที่เจ้าของโปรเจกต์และชื่อคลังเป็นของคุณตามจริง)
     NSString *apiURLString = [NSString stringWithUTF8String:AY_OBFUSCATE("https://api.github.com/repos/kuyk15820-cpu/V12New/releases/latest")];
     NSURL *url = [NSURL URLWithString:apiURLString];
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:15.0];
-    [request setValue:@"TikTokTool-Updater" forHTTPHeaderField:@"User-Agent"];
+    [request setValue:[NSString stringWithUTF8String:AY_OBFUSCATE("TikTokTool-Updater")] forHTTPHeaderField:[NSString stringWithUTF8String:AY_OBFUSCATE("User-Agent")]];
     
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error || !data) return;
@@ -353,17 +389,17 @@
         NSDictionary *releaseInfo = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&jsonError];
         if (jsonError || ![releaseInfo isKindOfClass:[NSDictionary class]]) return;
         
-        NSString *latestTag = releaseInfo[@"tag_name"];
-        if ([latestTag hasPrefix:@"v"]) {
+        NSString *latestTag = releaseInfo[[NSString stringWithUTF8String:AY_OBFUSCATE("tag_name")]];
+        if ([latestTag hasPrefix:[NSString stringWithUTF8String:AY_OBFUSCATE("v")]]) {
             latestTag = [latestTag substringFromIndex:1];
         }
         
         // ตรวจสอบเปรียบเทียบว่าเวอร์ชันของ GitHub ใหม่กว่าเครื่องปัจจุบันหรือไม่
         if ([latestTag compare:currentVersion options:NSNumericSearch] == NSOrderedDescending) {
-            NSArray *assets = releaseInfo[@"assets"];
+            NSArray *assets = releaseInfo[[NSString stringWithUTF8String:AY_OBFUSCATE("assets")]];
             if (assets && assets.count > 0) {
                 // เก็บลิงก์ URL สำหรับใช้โหลดไฟล์ตรงของตัวแรกสุดในรายการทรัพย์สิน
-                self.latestVersionDownloadUrl = assets[0][@"browser_download_url"];
+                self.latestVersionDownloadUrl = assets[0][[NSString stringWithUTF8String:AY_OBFUSCATE("browser_download_url")]];
                 self.isUpdateAvailable = YES;
                 
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -451,7 +487,7 @@
             [FTNotificationIndicator setNotificationIndicatorStyle:UIBlurEffectStyleDark];
             [FTNotificationIndicator showNotificationWithImage:successIcon
                                                           title:[NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเสร็จสิ้น")]
-                                                        message:[NSString stringWithUTF8String:AY_OBFUSCATE("เตรียมพร้อมสำหรับการจัดเก็บและติดตั้งคัดลอกไฟล์")]];
+                                                        message:nil];
             
             // เรียกแชร์เปิดไฟล์ผ่านระบบ Share Sheet ทันที เพื่อให้ผู้ใช้เลือก Save to Files หรือติดตั้งเอง
             NSArray *itemsToShare = @[destinationURL];
