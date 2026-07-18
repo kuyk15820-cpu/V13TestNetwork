@@ -180,7 +180,7 @@
         if (!cell) {
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:updateCellIdentifier];
             cell.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
-            cell.textLabel.textColor = [UIColor whiteColor];
+            cell.textLabel.textColor = [UIColor systemPinkColor];
         }
         cell.textLabel.text = [NSString stringWithUTF8String:AY_OBFUSCATE("ดาวน์โหลดเวอร์ชันใหม่")];
         cell.imageView.image = nil; // นำไอคอน SF ออก
@@ -387,10 +387,17 @@
                 self.latestVersionDownloadUrl = assets[0][[NSString stringWithUTF8String:AY_OBFUSCATE("browser_download_url")]];
                 self.isUpdateAvailable = YES;
                 
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.tableView reloadData];
+                                dispatch_async(dispatch_get_main_queue(), ^{
+                    // --- เพิ่ม Animation พลิกหน้าตารางตรงนี้ ---
+                    [UIView transitionWithView:self.tableView
+                                      duration:0.5f // ความเร็วในการพลิก (หน่วยเป็นวินาที)
+                                       options:UIViewAnimationOptionTransitionFlipFromLeft | UIViewAnimationOptionAllowUserInteraction
+                                    animations:^{
+                        // ทุกอย่างที่เปลี่ยนแปลงภายในบล็อกนี้จะโดนเอฟเฟกต์พลิกหน้าพร้อมกัน
+                        [self.tableView reloadData];
+                    } completion:nil];
                     
-                    // แสดงแจ้งเตือน FTNotificationIndicator ว่าพบเวอร์ชันใหม่
+                    // แสดงแจ้งเตือน FTNotificationIndicator ว่าพบเวอร์ชันใหม่ (โค้ดเดิมของคุณ)
                     UIImage *updateIcon = nil;
                     if (@available(iOS 13.0, *)) {
                         updateIcon = [UIImage systemImageNamed:[NSString stringWithUTF8String:AY_OBFUSCATE("arrow.down.circle")]];
@@ -441,7 +448,7 @@
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
     NSString *fileName = downloadTask.originalRequest.URL.lastPathComponent;
     if (!fileName || fileName.length == 0) {
-        fileName = [NSString stringWithUTF8String:AY_OBFUSCATE("update.tipa")];
+        fileName = [NSString stringWithUTF8String:AY_OBFUSCATE("FXTool.ipa")];
     }
     
     NSString *tmpDirectory = NSTemporaryDirectory();
