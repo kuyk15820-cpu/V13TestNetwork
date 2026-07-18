@@ -36,7 +36,7 @@
 }
 
 - (void)viewDidLoad {
-   [super viewDidLoad];
+    [super viewDidLoad];
     
     // ตั้งค่าพื้นหลังรวมเป็นสีดำสนิทสนมกับ Dark Mode 
     self.view.backgroundColor = [UIColor systemBackgroundColor];
@@ -123,6 +123,11 @@
     self.tableView.separatorColor = [UIColor separatorColor];
     self.tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     
+    // เพิ่มตัวตรวจจับการแตะ (Gesture) บน TableView เพื่อเช็คการกดที่ตัว Header Text ของระบบ
+    UITapGestureRecognizer *headerTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleHeaderTapGesture:)];
+    headerTapGesture.cancelsTouchesInView = NO; 
+    [self.tableView addGestureRecognizer:headerTapGesture];
+    
     [self.view addSubview:self.tableView];
 }
 
@@ -149,7 +154,7 @@
 #pragma mark - UITableView Quick Setup (Dark Style)
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    // ถ้ามีอัปเดต จะแสดงเซกชันเพิ่มอีก 1 เซกชันเพื่อทำเป็นปุ่ม Header Text
+    // ถ้ามีอัปเดต จะแสดงเซกชันถัดจากเซกชันหลัก เพื่อทำเป็นปุ่ม Header ของระบบ
     if (self.isUpdateAvailable) {
         return 2;
     }
@@ -160,7 +165,7 @@
     if (section == 0) {
         return self.menuItems.count;
     }
-    return 0; // เซกชันที่ 1 ไม่มี Cell เพราะแสดงเฉพาะปุ่มดาวน์โหลดที่ Header Text เท่านั้น
+    return 0; // เซกชันที่ 1 ไม่มีตารางหรือแถวใดๆ เพราะใช้เฉพาะ Header Text เท่านั้น
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -170,45 +175,44 @@
     return nil;
 }
 
-// เพิ่มเติมส่วน Header View สำหรับแสดง Header Text ที่สามารถกดดาวน์โหลดอัปเดตได้
-- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+// ผสมสีข้อความในระบบ Header Text ดั้งเดิมโดยใช้ NSAttributedString
+- (NSAttributedString *)tableView:(UITableView *)tableView __id_nullability attributedTitleForHeaderInSection:(NSInteger)section {
     if (section == 1 && self.isUpdateAvailable) {
-        UIButton *headerButton = [UIButton buttonWithType:UIButtonTypeSystem];
-        NSString *titleText = [NSString stringWithUTF8String:AY_OBFUSCATE("✨ มีอัปเดตใหม่! แตะที่นี่เพื่อดาวน์โหลดเวอร์ชันใหม่")];
+        NSString *part1 = [NSString stringWithUTF8String:AY_OBFUSCATE("✨ มีอัปเดตใหม่ ")];
+        NSString *part2 = [NSString stringWithUTF8String:AY_OBFUSCATE("แตะที่นี่เพื่อดาวน์โหลดเวอร์ชันใหม่")];
+        NSString *fullText = [NSString stringWithFormat:@"%@%@", part1, part2];
         
-        if (@available(iOS 15.0, *)) {
-            // ใช้ UIButtonConfiguration เพื่อหลีกเลี่ยง contentEdgeInsets ที่ Deprecated
-            UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
-            config.contentInsets = NSDirectionalEdgeInsetsMake(10, 16, 10, 16);
-            
-            NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:titleText];
-            [attributedString addAttributes:@{
-                NSFontAttributeName: [UIFont boldSystemFontOfSize:14.0f],
-                NSForegroundColorAttributeName: [UIColor systemBlueColor]
-            } range:NSMakeRange(0, titleText.length)];
-            
-            config.attributedTitle = attributedString;
-            headerButton.configuration = config;
-        } else {
-            // รองรับ iOS เวอร์ชันเก่าแบบ Backward Compatibility
-            headerButton.contentEdgeInsets = UIEdgeInsetsMake(10, 16, 10, 16);
-            [headerButton setTitle:titleText forState:UIControlStateNormal];
-            [headerButton setTitleColor:[UIColor systemBlueColor] forState:UIControlStateNormal];
-            headerButton.titleLabel.font = [UIFont boldSystemFontOfSize:14.0f];
-        }
+        NSMutableAttributedString *attributedStr = [[NSMutableAttributedString alloc] initWithString:fullText];
         
-        headerButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-        [headerButton addTarget:self action:@selector(downloadAndShareUpdate) forControlEvents:UIControlEventTouchUpInside];
-        return headerButton;
+        // ตั้งค่าฟอนต์มาตรฐานของระบบ Header
+        UIFont *headerFont = [UIFont systemFontOfSize:13.0f weight:UIFontWeightRegular];
+        [attributedStr addAttribute:NSFontAttributeName value:headerFont range:NSMakeRange(0, fullText.length)];
+        
+        // ช่วงข้อความที่ 1 ให้ใช้สีข้อความปกติของ Header ระบบ (สีเทา)
+        NSRange range1 = [fullText rangeOfString:part1];
+        [attributedStr addAttribute:NSForegroundColorAttributeName value:[UIColor secondaryLabelColor] range:range1];
+        
+        // ช่วงข้อความที่ 2 (คำสั่งกดดาวน์โหลด) ให้เป็นสีน้ำเงินเด่นชัด
+        NSRange range2 = [fullText rangeOfString:part2];
+        [attributedStr addAttribute:NSForegroundColorAttributeName value:[UIColor systemBlueColor] range:range2];
+        [attributedStr addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:13.0f weight:UIFontWeightMedium] range:range2];
+        
+        return attributedStr;
     }
     return nil;
 }
 
-- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
-    if (section == 1 && self.isUpdateAvailable) {
-        return 40.0f;
+// ตรวจจับพิกัดเมื่อผู้ใช้แตะโดนตัว Header ของระบบในเซกชันอัปเดต
+- (void)handleHeaderTapGesture:(UITapGestureRecognizer *)gesture {
+    if (!self.isUpdateAvailable) return;
+    
+    CGPoint tapPoint = [gesture locationInView:self.tableView];
+    CGRect headerRect = [self.tableView rectForHeaderInSection:1];
+    
+    // ตรวจสอบว่าพิกัดที่แตะอยู่ในพื้นที่ Header Text ของ Section 1 หรือไม่
+    if (CGRectContainsPoint(headerRect, tapPoint)) {
+        [self downloadAndShareUpdate];
     }
-    return UITableViewAutomaticDimension;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
